@@ -2,29 +2,42 @@
  * Tratamiento de datos para el objeto
  */
  class Data{
-     constructor(){
+    constructor(){
         this.container = []
-     }
-    push(value){
-        this.container.push(value)
     }
     add(value){
-        this.container.push(value)
-    }
-    reset(){
-        this.container = []
-    }
-    last(value = 1){
-        return this.container[this.container.length - value]
-    }
+         this.container.push(value)
+     }
     get(){
         return this.container
+    }
+    getToArray(index){
+        let arr  = []
+        for (let o of this.container){
+            arr.push(o[index])
+        }
+        return arr
+    }
+    max(index){
+        return Math.max(...this.getToArray(index))
+    }
+    min(index){
+        return Math.min(...this.getToArray(index))
+    }
+    last(value = 1){
+        return this.container[this.container.length - value] || null
     }
     len(){
         return this.container.length
     }
     slice(value){
         return this.container.slice(value)
+    }
+    push(value){
+        this.container.push(value)
+    }
+    reset(){
+        this.container = []
     }
     test(){
         try{
@@ -40,6 +53,7 @@
 
         }
     }
+
 
 }
 module.exports = Data

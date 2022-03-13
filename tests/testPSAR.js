@@ -12,16 +12,14 @@ fs.readFile("./db/PSAR.csv", "utf8", async (err, filedata) => {
   let result = []
   for (let row of rows){
     let cells = row.split(';')
-
-    console.log(indicator.paravolicSAR(new Candle({ 
+    indicator.data.add(new Candle({ 
       date:   new Date(),
       //open:   parseFloat(cells[1]),
       high:   parseFloat(cells[1]),
       low:    parseFloat(cells[2]),
-    })))
+    }))
+    console.log(indicator.paravolicSAR(), '|||',cells[9])
   }
-  console.log(cells)
-  process.exit()
   console.log("-------------------------------")
   console.log(result)
 })

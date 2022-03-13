@@ -30,11 +30,7 @@ class IndicatorJS {
             // MArcador de tendencia +1 y -1
             trend: {
                 value: 1,
-                // Se guardan los valores de la tendencia
-                db: {
-                    max: new Data(),
-                    min: new Data()
-                }
+
             },
             // Factor de aceleración SAR
             startFactor: 0.02,
@@ -42,10 +38,13 @@ class IndicatorJS {
             acelerationFactor: 0.02,
             // Máximo alcanzable por el factor de aceleración SAR
             maxFA: 0.2,
+            epsar: 0, 
             // Guardado del ultimó valor SAR computado
             extremePoint: 0.0,
             // Guardado del ultimo valor del factor de aceleración SAR
             af: 0.0,
+            // Punto extremo anterior
+            ep: null,
             reset: ()=>{
 
             }
@@ -75,32 +74,33 @@ class IndicatorJS {
             this.data.test() 
         else 
             this.data.push(_data)
-            
+        // El inicio de af es start
+        if (this.af == 0) this.af = this.startFactor
+
         let result = 0.0
         let candle = this.data.last()
-        // Establece el punto extremo
-        let chEx = this.setExtremePoint()
-        // Ajuste de la tendencia
-        if (this.SAR.trend.value == 1) {
-            (this.SAR.value > candle.high) && this.SAR.reset()
-        } else {
-            (this.SAR.value < candle.low) && this.SAR.reset() 
-        }      
-
-        this.color = this.SAR.trend.value == 1 ? this.green : this.red
-        if (chEx){
-            // El inicio de af es start
-            if (this.af == 0) this.af = this.startFactor
-            // Se recalcula el factor aceleración
-            else {
+        let ep = this.data.max('high')
+        if(this.SAR.value != null){
+            let min1 = this.data.last(2)
+            let min2 = this.data.last(3) 
+            console.log(min1.low, min2.low, this.SAR.value)
+            process.exit()
+            this.SAR.value = Math.min(min1.min, min2.min, this.SAR.value)
+            if(this.SAR.ep !=  ep){
                 this.SAR.af += this.SAR.acelerationFactor
+                if (this.SAR.af > this.SAR.maxFA) this.SAR.af = this.SAR.maxFA
             }
-            // Limitamos el factor al maximo permitido
-            ( this.SAR.af> this.SAR.maxFA) && (this.SAR.af = this.SAR.maxFA)
-
+            console.log(this.SAR.value , this.SAR.af , ep )
+            this.SAR.value = this.SAR.value + this.SAR.af * (ep - this.SAR.value)
+        } else {
+            this.SAR.value = ep 
         }
+        this.SAR.ep = ep
+ 
+        return this.SAR.value
+
         // Calcula la SAR de la siguiete vela
-        result = this.paravolicSARcalculate()
+        result = this.paravolicSARcalculate(candle)
 
         // Rectificación del PUNTO EXTREMO en los cambios de tendencia con desfase con los min y max de la propia vela.
         // binace BTCUSDT en la vela 21/1/22 20:00
@@ -129,17 +129,16 @@ class IndicatorJS {
      * @param {object} candle vala con los datos
      * @returns {bool} indica si ha establecido un nuevo punto extremo
      */
-    setExtremePoint() {
-        let c = this.data.last()
+/*     setExtremePoint(candle) {
         let t = this.SAR.trend.value
         
-        this.SAR.trend.db.max.push(c.high)
-        this.SAR.trend.db.min.push(c.low)
+        this.SAR.trend.db.max.push(candle.high)
+        this.SAR.trend.db.min.push(candle.low)
         // Guarda el punto extremo para el siguiente cálculo
         let ep = this.SAR.extremePoint,
         lp = ep
         
-        if (t == 1 && ep < c.high) 
+        if (t == 1 && ep < candle.high) 
         ep = Math.max(...this.SAR.trend.db.max.get())
         else if (t == -1 && ep > c.low) 
         ep = Math.min(...this.SAR.trend.db.min.get())
@@ -147,12 +146,12 @@ class IndicatorJS {
         this.SAR.extremePoint = ep
 
         return(ep > lp) ? 1 : (ep < lp) ? -1 : 0
-    }
+    } */
     /**
      * Cálculo del parabolic SAR
      * @returns {float} valor del parabólico
      */
-    paravolicSARcalculate() {
+    paravolicSARcalculate(candle) {
         let sar = this.SAR.value
         this.SAR.lsar = sar
         let af = this.SAR.af
@@ -163,13 +162,10 @@ class IndicatorJS {
         SAR Actual= SAR anterior + FA anterior (PE anterior – SAR anterior)
         */
         let afdiff = af * (ep - sar)
-        let val = sar + afdiff
-
-        if (this.SAR.trend.value == 1) {
-            (val > this.candle.min) && (val = this.candle.min)
-        } else {
-            (val < this.candle.max) && (val = this.candle.max)
-        }
+ 
+        let val = (this.SAR.trend.value == 1)?
+             sar + afdiff : (val > candle.high)?
+                candle.high : candle.low   
 
 
         return this.SAR.value = val
