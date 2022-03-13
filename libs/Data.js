@@ -26,15 +26,18 @@
     slice(value){
         return this.container.slice(value)
     }
-    error(){
+    test(){
         try{
             if(this.container < 1) throw 1
         }catch(err){
-            if(err == 1)
+            if(err == 1){
                 console.log(
                 '\x1b[31m%s\x1b[0m',
-                "No existen datos para analizar.\nPuede añadir velas al objeto con trade.add(new Candle())"
+                "No existen datos para procesar.\nSe puede añadir datos mediante el método add"
                 )
+                process.exit()
+            }
+
         }
     }
 

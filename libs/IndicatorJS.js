@@ -32,8 +32,8 @@ class IndicatorJS {
                 value: 1,
                 // Se guardan los valores de la tendencia
                 db: {
-                    max: [],
-                    min: []
+                    max: new Data(),
+                    min: new Data()
                 }
             },
             // Factor de aceleración SAR
@@ -68,28 +68,17 @@ class IndicatorJS {
      * @param {float,float,float,float, string} {apertura, cierre, máximo, mínimo, fecha}
      * @returns 
      */
-    paravolicSAR(
-        {
-            open = 0.0,
-            close = 0.0,
-            max = 0.0,
-            min = 0.0,
-            time = ""
-        }
-    ) {
+    paravolicSAR(_data = null) {
+        if (_data == null) 
+            this.data.test() 
+        else 
+            this.data.push(_data)
         let result = 0.0
-        this.candle = {
-            "open": parseFloat(open),
-            "close": parseFloat(close),
-            "max": parseFloat(max),
-            "min": parseFloat(min),
-            "time": time
-        }
 
-        // Inicializa argumentos si es necesario
-        this.SAR.ini()
         // Establece el punto extremo
         let chEx = this.setExtremePoint()
+        console.log(chEx)
+        process.exit()
         // Ajuste de la tendencia
         if (this.SAR.trend.value == 1) {
             (this.SAR.value > this.candle.min) && this.SAR.reset(this.candle)
@@ -137,23 +126,23 @@ class IndicatorJS {
      */
     setExtremePoint() {
         let c = this.candle
-            let t = this.SAR.trend.value
+        let t = this.SAR.trend.value
 
-                this.SAR.trend.db.max.push(this.candle.max)
-                this.SAR.trend.db.min.push(this.candle.min)
+        this.SAR.trend.db.max.push(this.candle.max)
+        this.SAR.trend.db.min.push(this.candle.min)
 
-                // Guarda el punto extremo para el siguiente cálculo
-                let ep = this.SAR.extremePoint,
-                    lp = ep
+        // Guarda el punto extremo para el siguiente cálculo
+        let ep = this.SAR.extremePoint,
+            lp = ep
 
-                if (t == 1 && ep < c.max) 
-                    ep = Math.max(...this.SAR.trend.db.max)
-                 else if (t == -1 && ep > c.min) 
-                    ep = Math.min(...this.SAR.trend.db.min)
+        if (t == 1 && ep < c.max) 
+            ep = Math.max(...this.SAR.trend.db.max)
+            else if (t == -1 && ep > c.min) 
+            ep = Math.min(...this.SAR.trend.db.min)
 
-                this.SAR.extremePoint = ep
+        this.SAR.extremePoint = ep
 
-                return(ep > lp) ? 1 : (ep < lp) ? -1 : 0
+        return(ep > lp) ? 1 : (ep < lp) ? -1 : 0
     }
     /**
  * Cálculo del parabolic SAR
@@ -165,10 +154,10 @@ class IndicatorJS {
         let af = this.SAR.af
         let ep = this.SAR.extremePoint
         /*
-    Si el precio está por encima del Parabolic SAR:
-    Parabolic SARi= Parabolic SARi-1+ α*(Hi-1– Parabolic SARi-1)
-    SAR Actual= SAR anterior + FA anterior (PE anterior – SAR anterior)
-    */
+        Si el precio está por encima del Parabolic SAR:
+        Parabolic SARi= Parabolic SARi-1+ α*(Hi-1– Parabolic SARi-1)
+        SAR Actual= SAR anterior + FA anterior (PE anterior – SAR anterior)
+        */
         let afdiff = af * (ep - sar)
         let val = sar + afdiff
 
@@ -318,7 +307,7 @@ class IndicatorJS {
         return ema     
     } 
     RSI(period = this.period){
-        this.data.error()
+        this.data.test()
         let len = period + 1
         let rsi = null
         
@@ -344,7 +333,7 @@ class IndicatorJS {
         return rsi 
 
     }
-    static filter = {
+    static filters = {
         error: true, 
         isEqual(a, b, factor = 0){
             return (a + factor) ==b 

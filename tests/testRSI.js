@@ -1,5 +1,6 @@
 const fs = require("fs");
 const Indicator = require("../libs/IndicatorJS.js");
+const {isEmpty} = Indicator.filters
 const Candle = require("../libs/Candle.js");
 const indicator = new Indicator()
 
@@ -14,7 +15,7 @@ fs.readFile("./db/RSI.csv", "utf8", async (err, filedata) => {
     indicator.data.add(c)
     let l = cells[cells.length-1]
     let i = indicator.RSI() != null ? indicator.RSI().toFixed(2) : null 
-    let p = l != null ? parseFloat(cells[cells.length-1]).toFixed(2) : null
-    console.log(i == p)
+    let p = isEmpty(l) ? parseFloat(cells[cells.length-1]).toFixed(2) : null
+    console.log(p, i, i == p)
   }
 });
