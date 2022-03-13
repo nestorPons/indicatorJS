@@ -1,25 +1,27 @@
 const fs = require("fs")
-const Trading = require("../libs/Trading.js")
+const IndicatorJS = require("../libs/IndicatorJS.js")
+const Candle = require("../libs/Candle.js")
+const indicator = new IndicatorJS()
 
 
-fs.readFile("./db/ADX-3.csv", "utf8", async (err, filedata) => {
-  let trade = new Trading()
+fs.readFile("./db/ADX.csv", "utf8", async (err, filedata) => {
+
   let rows = filedata.split('\n')
+  let title = rows.shift()
+  console.log(title)
   let result = []
   for (let row of rows){
     let cells = row.split(';')
-    trade.add({ 
+    indicator.data.add(new Candle({ 
       date:   cells[0],
       //open:   parseFloat(cells[1]),
       high:   parseFloat(cells[1]),
       low:    parseFloat(cells[2]),
       close:  parseFloat(cells[3]),
-    }
+    })
     )
-    result.push(trade.ADX())
-
+    console.log(cells[15],indicator.ADX())
   }
-  
   console.log("-------------------------------")
   console.log(result)
 })

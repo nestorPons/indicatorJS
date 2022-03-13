@@ -2,10 +2,10 @@ class Candle{
     constructor(data){
         if(typeof(data)=='object'){
             this._time  = new Date(data.time)
-            this._open   = parseFloat(data.open)
-            this._high   = parseFloat(data.high)
-            this._low    = parseFloat(data.low)
-            this._close  = parseFloat(data.close)
+            this._open   = parseFloat(data.open)    || null    
+            this._high   = parseFloat(data.high)    || null
+            this._low    = parseFloat(data.low)     || null
+            this._close  = parseFloat(data.close)   || null
         } else{
             this._time = null
             this._open = null
