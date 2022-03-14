@@ -116,6 +116,7 @@ class IndicatorJS {
      */
     simpleMediaAverage(_data = null, _period = null) {
         let t = 0
+        let last = this.SMA.data.last()
         if (_data == null) 
             for(let candle of this.data.get()){
                 this.SMA.data.push(candle.close) 
@@ -132,7 +133,7 @@ class IndicatorJS {
             t += parseFloat(d)
         }
         let r = data.length >= period ? t/data.length : null  
-        this.SMA.acc.push((ema-last)/2)
+        this.SMA.acc.push((r-last)/2)
         return r
     } 
     ADX(period = this.period) {
