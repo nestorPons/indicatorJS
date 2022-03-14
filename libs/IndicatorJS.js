@@ -130,7 +130,8 @@ class IndicatorJS {
         for (let d of data){
             t += parseFloat(d)
         }
-        return t/data.length
+        let r = data.length >= period ? t/data.length : null  
+        return r
     } 
     ADX(period = this.period) {
         let dm1s = 0
