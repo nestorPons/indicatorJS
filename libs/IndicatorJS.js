@@ -12,7 +12,8 @@ class IndicatorJS {
             acc: new Data()
         }
         this.SMA = {
-            data: new Data()
+            data: new Data(),
+            acc: new Data()
         }
         this._TR = {
             data: [],
@@ -131,6 +132,7 @@ class IndicatorJS {
             t += parseFloat(d)
         }
         let r = data.length >= period ? t/data.length : null  
+        this.SMA.acc.push((ema-last)/2)
         return r
     } 
     ADX(period = this.period) {
