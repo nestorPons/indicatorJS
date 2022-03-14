@@ -28,10 +28,9 @@ class IndicatorJS {
             lsar: null,
             // Máximo/minimo valor de la vela anterior
             // MArcador de tendencia +1 y -1
-            trend: {
-                value: 1,
-
-            },
+            trend: 1,
+            min: new Data(),
+            max: new Data(),
             // Factor de aceleración SAR
             startFactor: 0.02,
             // Factor de aceleración SAR
@@ -39,137 +38,75 @@ class IndicatorJS {
             // Máximo alcanzable por el factor de aceleración SAR
             maxFA: 0.2,
             epsar: 0, 
-            // Guardado del ultimó valor SAR computado
+            // Punto extremo anterior
             extremePoint: 0.0,
             // Guardado del ultimo valor del factor de aceleración SAR
-            af: 0.0,
-            // Punto extremo anterior
-            ep: null,
-            reset: ()=>{
-
+            af: 0,
+            /**
+             * Resetea parametros del PSAR
+             * @param {Candle} candle 
+             */
+            reset(candle) {
+                this.value = this.extremePoint
+                this.trend *= -1
+                this.af = 0
+                this.max = new Data(candle)
+                this.min = new Data(candle)
+            },    
+            /**
+            * Asigna un SAR al primer registro
+            */
+            ini(candle){
+               let ca = candle.open 
+               let cc = candle.close
+       
+               // Si la vela es negativa SAR = max o si no SAR = min
+               this.value  = ca > cc ? candle.high : candle.low
+               this.trend = ca > cc ? -1 : 1
             }
         }
     }
     get last(){
         return this.data.container.splice(-1)[0]
     }
-    ini() { // Solo para el primer registro si tiene valores 0
-        if (this.value == null) 
-            this.paravolicSARini()
-    }
-    reset(candle) {
-        this.value = this.extremePoint
-        this.trend.value = this.trend.value == 1 ? -1 : 1
-        this.af = this.startFactor
-        this.trend.db.max = [candle.max]
-        this.trend.db.min = [candle.min]
-    }
     /**
-     * 
-     * @param {float,float,float,float, string} {apertura, cierre, máximo, mínimo, fecha}
-     * @returns 
+     * Cálculo de la parabólica SAR
+     * @param {Candle} 
+     * @returns {Float}  this.SAR.reset(candle)
      */
-    paravolicSAR(_data = null) {
-        if (_data == null) 
-            this.data.test() 
-        else 
-            this.data.push(_data)
-        // El inicio de af es start
-        if (this.af == 0) this.af = this.startFactor
-
-        let result = 0.0
+    PSAR(_data = null) {
+        if (_data == null) this.data.test() 
+        else this.data.push(_data)
         let candle = this.data.last()
-        let ep = this.data.max('high')
-        if(this.SAR.value != null){
-            let min1 = this.data.last(2)
-            let min2 = this.data.last(3) 
-            console.log(min1.low, min2.low, this.SAR.value)
-            process.exit()
-            this.SAR.value = Math.min(min1.min, min2.min, this.SAR.value)
-            if(this.SAR.ep !=  ep){
-                this.SAR.af += this.SAR.acelerationFactor
-                if (this.SAR.af > this.SAR.maxFA) this.SAR.af = this.SAR.maxFA
-            }
-            console.log(this.SAR.value , this.SAR.af , ep )
-            this.SAR.value = this.SAR.value + this.SAR.af * (ep - this.SAR.value)
-        } else {
-            this.SAR.value = ep 
+        // Inicialización
+        if (this.SAR.value == null) this.SAR.ini(candle)
+        if(candle.low < this.SAR.value && candle.high > this.SAR.value){
+            this.SAR.reset(candle)
         }
-        this.SAR.ep = ep
+        this.SAR.max.push(candle.high)
+        this.SAR.min.push(candle.low)
+        let ep = null
  
-        return this.SAR.value
-
-        // Calcula la SAR de la siguiete vela
-        result = this.paravolicSARcalculate(candle)
-
-        // Rectificación del PUNTO EXTREMO en los cambios de tendencia con desfase con los min y max de la propia vela.
-        // binace BTCUSDT en la vela 21/1/22 20:00
-        if (this.SAR.trend.value == -1 && this.SAR.extremePoint > candle.low) 
-            this.SAR.extremePoint = candle.low
-         else if (this.SAR.trend.value == 1 && this.SAR.extremePoint< candle.high) this.SAR.extremePoint = candle.high
-       
-        return result
-    } 
-    /**
-     * Asigna un SAR al primer registro
-     */
-    paravolicSARini(){
-        let candle = this.data.last()
-        let ca = candle.open
-        let cc = candle.close
-        let ch = candle.high
-        let cl = candle.low
-
-        // Si la vela es negativa SAR = max o si no SAR = min
-        this.SAR.value  = ca> cc ? ch : cl
-        this.SAR.trend.value = ca > cc ? -1 : 1
-    }
-    /**
-     * Establece el punto extremo
-     * @param {object} candle vala con los datos
-     * @returns {bool} indica si ha establecido un nuevo punto extremo
-     */
-/*     setExtremePoint(candle) {
-        let t = this.SAR.trend.value
-        
-        this.SAR.trend.db.max.push(candle.high)
-        this.SAR.trend.db.min.push(candle.low)
-        // Guarda el punto extremo para el siguiente cálculo
-        let ep = this.SAR.extremePoint,
-        lp = ep
-        
-        if (t == 1 && ep < candle.high) 
-        ep = Math.max(...this.SAR.trend.db.max.get())
-        else if (t == -1 && ep > c.low) 
-        ep = Math.min(...this.SAR.trend.db.min.get())
-        
+        if(this.SAR.trend == 1){
+            ep = this.SAR.max.max()
+            let min1 = this.SAR.min.last(2) || this.SAR.value
+            let min2 = this.SAR.min.last(3) || this.SAR.value
+            this.SAR.value = Math.min(min1, min2, this.SAR.value)
+        }else{
+            ep = this.SAR.min.min() 
+            let max1 = this.SAR.max.last(2) || this.SAR.value
+            let max2 = this.SAR.max.last(3) || this.SAR.value
+            this.SAR.value = Math.max(max1, max2, this.SAR.value) 
+        }
+        if(this.SAR.extremePoint != ep){
+            this.SAR.af += this.SAR.af == 0? this.SAR.startFactor : this.SAR.acelerationFactor
+            if (this.SAR.af > this.SAR.maxFA) this.SAR.af = this.SAR.maxFA
+        }
+        this.SAR.value = this.SAR.value + this.SAR.af * (ep - this.SAR.value)
         this.SAR.extremePoint = ep
 
-        return(ep > lp) ? 1 : (ep < lp) ? -1 : 0
-    } */
-    /**
-     * Cálculo del parabolic SAR
-     * @returns {float} valor del parabólico
-     */
-    paravolicSARcalculate(candle) {
-        let sar = this.SAR.value
-        this.SAR.lsar = sar
-        let af = this.SAR.af
-        let ep = this.SAR.extremePoint
-        /*
-        Si el precio está por encima del Parabolic SAR:
-        Parabolic SARi= Parabolic SARi-1+ α*(Hi-1– Parabolic SARi-1)
-        SAR Actual= SAR anterior + FA anterior (PE anterior – SAR anterior)
-        */
-        let afdiff = af * (ep - sar)
- 
-        let val = (this.SAR.trend.value == 1)?
-             sar + afdiff : (val > candle.high)?
-                candle.high : candle.low   
-
-
-        return this.SAR.value = val
-    }
+        return this.SAR.value
+    } 
     /**
      * Medias Móviles
      * @param {array|integer|null} data numeros de los que extraer una media simple 

@@ -11,18 +11,26 @@
     get(){
         return this.container
     }
-    getToArray(index){
+    getObjectToArray(index){
         let arr  = []
         for (let o of this.container){
             arr.push(o[index])
         }
         return arr
     }
-    max(index){
-        return Math.max(...this.getToArray(index))
+    max(index=null){
+        if (index != null){
+            return Math.max(...this.getObjectToArray(index))
+        }else{
+            return Math.max(...this.get())
+        }
     }
-    min(index){
-        return Math.min(...this.getToArray(index))
+    min(index=null){
+        if (index != null){
+            return Math.min(...this.getObjectToArray(index))
+        }else{
+            return Math.min(...this.get())
+        }
     }
     last(value = 1){
         return this.container[this.container.length - value] || null

@@ -3,7 +3,9 @@ const IndicatorJS = require("../libs/IndicatorJS.js")
 const Candle = require("../libs/Candle.js")
 const indicator = new IndicatorJS()
 
-
+indicator.SAR.value = 50
+indicator.SAR.af = 0
+indicator.SAR.trend = 1 
 fs.readFile("./db/PSAR.csv", "utf8", async (err, filedata) => {
 
   let rows = filedata.split('\n')
@@ -14,12 +16,11 @@ fs.readFile("./db/PSAR.csv", "utf8", async (err, filedata) => {
     let cells = row.split(';')
     indicator.data.add(new Candle({ 
       date:   new Date(),
-      //open:   parseFloat(cells[1]),
       high:   parseFloat(cells[1]),
       low:    parseFloat(cells[2]),
     }))
-    console.log(indicator.paravolicSAR(), '|||',cells[9])
+    result.push(indicator.PSAR())
   }
   console.log("-------------------------------")
-  console.log(result)
+  console.log(result.toString())
 })
