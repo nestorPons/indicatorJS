@@ -6,28 +6,21 @@
         this.container = []
     }
     add(value){
-         this.container.push(value)
+        this.container.push(value)
      }
     get(){
         return this.container
     }
-    getObjectToArray(index){
-        let arr  = []
-        for (let o of this.container){
-            arr.push(o[index])
-        }
-        return arr
-    }
     max(index=null){
         if (index != null){
-            return Math.max(...this.getObjectToArray(index))
+            return Math.max(...this.container.map(d=>d[index]))
         }else{
             return Math.max(...this.get())
         }
     }
     min(index=null){
         if (index != null){
-            return Math.min(...this.getObjectToArray(index))
+            return Math.min(...this.container.map(d=>d[index]))
         }else{
             return Math.min(...this.get())
         }

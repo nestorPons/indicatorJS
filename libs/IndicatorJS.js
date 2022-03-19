@@ -16,7 +16,7 @@ class IndicatorJS {
             acc: new Data()
         }
         this._TR = {
-            data: [],
+            data: new Data(),
             last: null,
             max: 0, 
             val: 0
@@ -114,26 +114,26 @@ class IndicatorJS {
      * @param {int|null} period periodo de la media 
      * @returns {integer} con la media del último elemento
      */
-    simpleMediaAverage(_data = null, _period = null) {
-        let t = 0
-        let last = this.SMA.data.last()
-        if (_data == null) 
-            for(let candle of this.data.get()){
-                this.SMA.data.push(candle.close) 
-            }
-        else if(Array.isArray(_data))
-            this.SMA.data = _data
-        else 
-            this.SMA.data.push(_data)
-
-        let period = _period || this.SMA.data.length
-        let data = this.SMA.data.slice(period*-1)
-        
-        for (let d of data){
-            t += parseFloat(d)
+    simpleMediaAverage(index, _data, _period = null) {
+        if(this.SMA.data[index] == undefined) {
+            this.SMA.data[index] = new Data()
+            this.SMA.acc[index] = new Data()
         }
-        let r = data.length >= period ? t/data.length : null  
-        this.SMA.acc.push((r-last)/2)
+        let t = 0
+        let data = this.SMA.data[index]
+        let acc = this.SMA.acc[index]
+        let last = data.last()
+
+        if(Array.isArray(_data)) data = _data
+        else data.push(_data)
+
+        let period = _period || data.length
+        let slice = data.slice(period*-1)
+        for (let d of slice){
+            t += parseFloat(d || 0)
+        }
+        let r = slice.length >= period ? t/slice.length : null  
+        acc.push((r-last)/2)
         return r
     } 
     ADX(period = this.period) {
@@ -193,8 +193,8 @@ class IndicatorJS {
 
         if (lastCandle != null) {
             v1 = candle.high - candle.low
-            v2 = candle.high - lastCandle.close
-            v3 = lastCandle.close - candle.low
+            v2 = candle.high - lastCandle.price
+            v3 = lastCandle.price - candle.low
             candle.TR.max = Math.max(v1, v2, v3) || 0
             // alisado de Wilder
             if (this.data.container.length<= (period + 1)){
@@ -217,24 +217,25 @@ class IndicatorJS {
      * @param {*} softened 
      * @returns 
      */
-    exponentialMediaAverage(_data, period, smooth=2){  
+    exponentialMediaAverage(index, _data, period, smooth=2){  
+        if(this.EMA.data[index] == undefined) {
+            this.EMA.data[index] = new Data()
+            this.EMA.acc[index] = new Data()
+            this.EMA.emas[index] = new Data()
+        }
         let ema = null
         let last = null
-        if (_data == null) 
-            for(let candle of this.data.get()){
-                this.EMA.data.push(candle.close) 
-            }
-        else if(Array.isArray(_data))
-            this.EMA.data = _data
-        else 
-            this.EMA.data.push(_data)
+        let data = this.EMA.data[index] 
+        let acc = this.EMA.acc[index] 
+        let emas = this.EMA.emas[index] 
 
-
-        if(this.EMA.data.len() >= period){
-            let slice = this.EMA.data.slice(period*-1)
-            last = this.EMA.emas.last(1) 
+        if(Array.isArray(_data)) data = _data
+        else data.push(_data)
+        if(data.len() >= period){
+            let slice = data.slice(period*-1)
+            last = emas.last(1) 
             if(last == null){
-                ema = this.simpleMediaAverage(slice)
+                ema = this.simpleMediaAverage(index, slice)
             } else{
                 let [price] = slice.slice(-1)
                 let fa = smooth/(period + 1)
@@ -242,9 +243,8 @@ class IndicatorJS {
                 ema = last + fa*(price-last)
             }
         }
-        
-        this.EMA.emas.push(ema)
-        this.EMA.acc.push((ema-last)/2)
+        emas.push(ema)
+        acc.push((ema-last)/2)
         return ema     
     } 
     RSI(period = this.period){
@@ -273,6 +273,45 @@ class IndicatorJS {
         }
         return rsi 
 
+    }
+    MACD(_data=null, short=12, long=26){
+        if(this.macd == undefined) this.macd = {data: new Data()}
+        let data = _data == null
+            ?this.data.last().close
+            :this.data. this.macd.data.push(_data)
+        let ema1 = this.exponentialMediaAverage('MACD',data,short)
+        let ema2 = this.exponentialMediaAverage('MACD',data,long)
+    
+        return ema1-ema2
+    }
+    /**
+     * Cálculo de las bandas de bollinger
+     * @param {integer} period 
+     * @param {integer} factor
+     * @returns 
+     */
+    bollinger(period = 20, factor = 2){
+        let slice = this.data.slice(period*-1).map(data=>data.price)
+        if(slice.length < period) return null
+        let av = this.simpleMediaAverage('bl',slice)
+        let sd = this.standardDeviation(slice, period)
+        let bs = av + (sd * factor) 
+        let bi = av - (sd * factor) 
+
+        return {high: bs, midle: av, low: bi}
+    }
+    /**
+     * Cálculo de la desviación standard
+     * @param {number} period 
+     * @returns 
+     */
+    standardDeviation(data){
+        let sma = this.simpleMediaAverage('sd',data)
+        let t = 0
+        for(let el of data){
+            t += Math.pow(el - sma, 2) 
+        }
+        return Math.sqrt(t/(data.length -1))
     }
     static filters = {
         error: true, 

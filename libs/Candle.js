@@ -6,6 +6,7 @@ class Candle{
             this._high   = parseFloat(data.high)    || null
             this._low    = parseFloat(data.low)     || null
             this._close  = parseFloat(data.close)   || null
+            this._price = (this._high + this.close) / 2
         } else{
             this._time = null
             this._open = null
@@ -13,6 +14,9 @@ class Candle{
             this._low = null
             this._close = null
         }
+    }
+    get price (){
+        return this._price
     }
     get open(){
         return this._open
@@ -49,6 +53,9 @@ class Candle{
     }
     set close(value){
         this._close = parseFloat(value)
+    }
+    set price(value){
+        this._price = parseFloat(value)
     }
 }
 module.exports = Candle
