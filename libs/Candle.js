@@ -7,13 +7,13 @@ class Candle{
             this._low    = parseFloat(data.low)     || null
             this._close  = parseFloat(data.close)   || null
             this._price = (this._high + this.close) / 2
-        } else{
-            this._time = null
-            this._open = null
-            this._high = null
-            this._low = null
-            this._close = null
+            this._closeTime = new Date(data.closeTime)
+        }else{
+            throw "No existen datos para crear la vela"
         }
+    }
+    get closeTime(){
+        return this._closeTime
     }
     get price (){
         return this._price
@@ -31,7 +31,7 @@ class Candle{
         return this._close
     }
     get time(){
-        return new Date(this._time)
+        return this._time
     }
     get datetime(){
         return new Date(this._time).toLocaleString()

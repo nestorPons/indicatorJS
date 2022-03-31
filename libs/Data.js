@@ -2,13 +2,18 @@
  * Tratamiento de datos para el objeto
  */
  class Data{
-    constructor(){
+    constructor(limit = 50){
+        this.limit = limit
         this.container = []
+    }
+    get length(){
+        return this.container.length
     }
     add(value){
         this.container.push(value)
      }
-    get(){
+    get(slice=null){
+        if(slice) return this.container.slice(slice*-1)
         return this.container
     }
     max(index=null){
@@ -35,6 +40,7 @@
         return this.container.slice(value)
     }
     push(value){
+        if (this.container.length > this.limit) this.container.unshift()
         this.container.push(value)
     }
     reset(){

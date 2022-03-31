@@ -2,8 +2,10 @@ const Data = require('./Data.js')
 class IndicatorJS {
     constructor(){
         this.period = 14
+        // Contenedor de las velas 
+        this.data = new Data()
         // Valores para calcular EMA y SMA
-        this.EMA = { // Suavizado EMA a mayor numero mayor peso en los datos más recientes
+        this.ema = { // Suavizado EMA a mayor numero mayor peso en los datos más recientes
             softened: 2,
             // Periodos que calcular
             period: 20,
@@ -11,19 +13,22 @@ class IndicatorJS {
             emas: new Data(),
             acc: new Data()
         }
-        this.SMA = {
+        this.sma = {
             data: new Data(),
             acc: new Data()
         }
-        this._TR = {
+        this.tr = {
             data: new Data(),
             last: null,
             max: 0, 
             val: 0
         }
-        this.data = new Data()
+        this.sd = {
+            data : new Data()
+        }
+      
         // Parametros para loscalculos del SAR
-        this.SAR = {
+        this.sar = {
             value: null,
             // Sar utilizado para realizar las operaciones
             lsar: null,
@@ -35,9 +40,9 @@ class IndicatorJS {
             // Factor de aceleración SAR
             startFactor: 0.02,
             // Factor de aceleración SAR
-            acelerationFactor: 0.02,
+            acelerationFactor: 0.06,
             // Máximo alcanzable por el factor de aceleración SAR
-            maxFA: 0.2,
+            maxFA: 0.4,
             epsar: 0, 
             // Punto extremo anterior
             extremePoint: 0.0,
@@ -66,6 +71,20 @@ class IndicatorJS {
                this.trend = ca > cc ? -1 : 1
             }
         }
+        this.tr = {
+            val: null, 
+            max: null,
+            data: new Data(14)
+        }
+        this.atr = {
+            val : null,
+        }
+        this.adx = {
+            dxt: 0,
+            dm1s: 0, 
+            dm2s: 0, 
+            val: null
+        }
     }
     get last(){
         return this.data.container.splice(-1)[0]
@@ -73,40 +92,40 @@ class IndicatorJS {
     /**
      * Cálculo de la parabólica SAR
      * @param {Candle} 
-     * @returns {Float}  this.SAR.reset(candle)
+     * @returns {Float}  this.sar.reset(candle)
      */
     PSAR(_data = null) {
         if (_data == null) this.data.test() 
         else this.data.push(_data)
         let candle = this.data.last()
         // Inicialización
-        if (this.SAR.value == null) this.SAR.ini(candle)
-        if(candle.low < this.SAR.value && candle.high > this.SAR.value){
-            this.SAR.reset(candle)
+        if (this.sar.value == null) this.sar.ini(candle)
+        if(candle.low < this.sar.value && candle.high > this.sar.value){
+            this.sar.reset(candle)
         }
-        this.SAR.max.push(candle.high)
-        this.SAR.min.push(candle.low)
+        this.sar.max.push(candle.high)
+        this.sar.min.push(candle.low)
         let ep = null
  
-        if(this.SAR.trend == 1){
-            ep = this.SAR.max.max()
-            let min1 = this.SAR.min.last(2) || this.SAR.value
-            let min2 = this.SAR.min.last(3) || this.SAR.value
-            this.SAR.value = Math.min(min1, min2, this.SAR.value)
+        if(this.sar.trend == 1){
+            ep = this.sar.max.max()
+            let min1 = this.sar.min.last(2) || this.sar.value
+            let min2 = this.sar.min.last(3) || this.sar.value
+            this.sar.value = Math.min(min1, min2, this.sar.value)
         }else{
-            ep = this.SAR.min.min() 
-            let max1 = this.SAR.max.last(2) || this.SAR.value
-            let max2 = this.SAR.max.last(3) || this.SAR.value
-            this.SAR.value = Math.max(max1, max2, this.SAR.value) 
+            ep = this.sar.min.min() 
+            let max1 = this.sar.max.last(2) || this.sar.value
+            let max2 = this.sar.max.last(3) || this.sar.value
+            this.sar.value = Math.max(max1, max2, this.sar.value) 
         }
-        if(this.SAR.extremePoint != ep){
-            this.SAR.af += this.SAR.af == 0? this.SAR.startFactor : this.SAR.acelerationFactor
-            if (this.SAR.af > this.SAR.maxFA) this.SAR.af = this.SAR.maxFA
+        if(this.sar.extremePoint != ep){
+            this.sar.af += this.sar.af == 0? this.sar.startFactor : this.sar.acelerationFactor
+            if (this.sar.af > this.sar.maxFA) this.sar.af = this.sar.maxFA
         }
-        this.SAR.value = this.SAR.value + this.SAR.af * (ep - this.SAR.value)
-        this.SAR.extremePoint = ep
+        this.sar.value = this.sar.value + this.sar.af * (ep - this.sar.value)
+        this.sar.extremePoint = ep
 
-        return this.SAR.value
+        return this.sar.value
     } 
     /**
      * Medias Móviles
@@ -115,13 +134,13 @@ class IndicatorJS {
      * @returns {integer} con la media del último elemento
      */
     simpleMediaAverage(index, _data, _period = null) {
-        if(this.SMA.data[index] == undefined) {
-            this.SMA.data[index] = new Data()
-            this.SMA.acc[index] = new Data()
+        if(this.sma.data[index] == undefined) {
+            this.sma.data[index] = new Data()
+            this.sma.acc[index] = new Data()
         }
         let t = 0
-        let data = this.SMA.data[index]
-        let acc = this.SMA.acc[index]
+        let data = this.sma.data[index]
+        let acc = this.sma.acc[index]
         let last = data.last()
 
         if(Array.isArray(_data)) data = _data
@@ -136,79 +155,92 @@ class IndicatorJS {
         acc.push((r-last)/2)
         return r
     } 
-    ADX(period = this.period) {
+    /**
+     *  Identificar la fuerza de una tendencia potencial
+     * @param {int} period 
+     * @returns {float|null}
+     */
+    ADX(period = 14) {
         let dm1s = 0
         let dm2s = 0
-        let candle =  this.data.last() || {ADX :{val: null, max: null}}
+        let candle =  this.data.last()
         let lastCandle = this.data.last(2)
-        let tr = this.TR(period)
-        
-        if (candle.ADX == undefined) 
-            candle.ADX = {
-                dm1: 0, dm2: 0, dm1s: 0, dm2s: 0, di1s: 0, di2s: 0, diabs: 0, dx: 0, val: 0
-            }
+        let last = Object.assign({} ,this.adx)
+        let tr = this.ATR(period)
+        let dm1 = null
+        let dm2 = null
         
         if (lastCandle != null) {
             let cm = candle.high - lastCandle.high
             let rm = lastCandle.low - candle.low
-            candle.ADX.dm1 = cm> rm ? Math.max(cm, 0) : 0
-            candle.ADX.dm2 = rm > cm ? Math.max(rm, 0) : 0
+            dm1 = cm> rm ? Math.max(cm, 0) : 0
+            dm2 = rm > cm ? Math.max(rm, 0) : 0
 
             if (this.data.container.length<= period) {
-                dm1s += candle.ADX.dm1
-                dm2s += candle.ADX.dm2
-                candle.ADX.dm1s = dm1s
-                candle.ADX.dm2s = dm2s
+                dm1s += dm1
+                dm2s += dm2
+                this.adx.dm1s = dm1s
+                this.adx.dm2s = dm2s
             } else {
                 // TR14 = (13 / 14 ) * Anterior TR14  + TR1 actual / 14
-                candle.ADX.dm1s = lastCandle.ADX.dm1s -(lastCandle.ADX.dm1s / period) + candle.ADX.dm1
-                candle.ADX.dm2s = lastCandle.ADX.dm2s -(lastCandle.ADX.dm2s / period) + candle.ADX.dm2
-                candle.ADX.di1s = 100 * (candle.ADX.dm1s / tr)
-                candle.ADX.di2s = 100 * (candle.ADX.dm2s / tr)
-                candle.ADX.diabs = Math.abs(candle.ADX.di1s - candle.ADX.di2s)
-                candle.ADX.dx = 100 * (candle.ADX.diabs / (candle.ADX.di1s + candle.ADX.di2s))
+                this.adx.dm1s = last.dm1s -(last.dm1s / period) + dm1
+                this.adx.dm2s = last.dm2s -(last.dm2s / period) + dm2
+                let di1s = 100 * (this.adx.dm1s / tr)
+                let di2s = 100 * (this.adx.dm2s / tr)
+                let diabs = Math.abs(di1s - di2s)
+
+                let dx = 100 * (diabs / (di1s + di2s))
                 // Suavizado de dx
                 if (this.data.len() <= (period * 2)) {
-                    candle.ADX.val += (candle.ADX.dx / period)
+                    this.adx.dxt += dx
                 } else {
-                    candle.ADX.val = ((lastCandle.ADX.val * (period - 1)) + candle.ADX.dx) / period
+                     return this.adx.val = (this.adx.val == null) 
+                        ? this.adx.dxt / period 
+                        : ((last.val * (period - 1)) + dx) / period
                 }
             }
         }
-        return candle.ADX.val
+        return null
+    }
+    /**
+     * Cálculo del valor verdadero con alisado Wilder
+     * @param {int} period 
+     * @returns Float resultado del cálculo de ATR
+     */
+    ATR(period = 14){
+        let tr = this.TR()
+        console.log(tr)
+        let last = this.atr.val || null
+        if(this.data.len() <= period) return null // Filtro
+        this.atr.val = this.atr.val == null
+            ? this.simpleMediaAverage('atr', this.tr.data.get(period))
+            : (last*(period-1)+tr)/period
+        
+        return parseFloat(this.atr.val)
     } 
     /**
-     * cálculo del verdadero rango
+     * cálculo del rango verdadero
      * @param {Integer} period 
      * @param {high, low, close} _data 
      * @returns 
      */
-    TR(period = 14) {
-        let candle = this.data.last() || {TR :{val: null, max: null}}
+    TR() {
+        let candle = this.data.last() 
         let lastCandle = this.data.last(2)
-        let data = this.data.get()
+        let last = this.tr.val
         let v1, v2, v3
-        if (candle != undefined && candle.TR == undefined)
-            candle.TR = {val: null, max: null, }
 
         if (lastCandle != null) {
             v1 = candle.high - candle.low
-            v2 = candle.high - lastCandle.price
-            v3 = lastCandle.price - candle.low
-            candle.TR.max = Math.max(v1, v2, v3) || 0
-            // alisado de Wilder
-            if (this.data.container.length<= (period + 1)){
-                for(let last of data){
-                    candle.TR.val += last.TR.max 
-                }
-            }else{
-                // TR14 = (13 / 14 ) * Anterior TR14  + TR1 actual / 14
-                candle.TR.val = lastCandle.TR.val-(lastCandle.TR.val/period)+candle.TR.max
-            }
-        } 
-        this.data.container.push(candle)
+            v2 = candle.high - lastCandle.close
+            v3 = lastCandle.close - candle.low
+      
+            this.tr.val = Math.max(v1, v2, v3)
 
-        return  candle.TR.val 
+        } 
+
+        this.tr.data.push(this.tr.val)
+        return  this.tr.val 
     } 
     /**
      * 
@@ -218,16 +250,16 @@ class IndicatorJS {
      * @returns 
      */
     exponentialMediaAverage(index, _data, period, smooth=2){  
-        if(this.EMA.data[index] == undefined) {
-            this.EMA.data[index] = new Data()
-            this.EMA.acc[index] = new Data()
-            this.EMA.emas[index] = new Data()
+        if(this.ema.data[index] == undefined) {
+            this.ema.data[index] = new Data()
+            this.ema.acc[index] = new Data()
+            this.ema.emas[index] = new Data()
         }
         let ema = null
         let last = null
-        let data = this.EMA.data[index] 
-        let acc = this.EMA.acc[index] 
-        let emas = this.EMA.emas[index] 
+        let data = this.ema.data[index] 
+        let acc = this.ema.acc[index] 
+        let emas = this.ema.emas[index] 
 
         if(Array.isArray(_data)) data = _data
         else data.push(_data)
@@ -261,10 +293,10 @@ class IndicatorJS {
             
             for(let d of data){
                 if(last!=null){
-                    if(d.close > last > 0) pos += (d.close - last)
-                    else neg += (last - d.close)
+                    if(d.price > last > 0) pos += (d.price - last)
+                    else neg += (last - d.price)
                 }
-                last = d.close
+                last = d.price
             }
             let ms = pos / period
             let mb = neg / period
@@ -275,14 +307,20 @@ class IndicatorJS {
 
     }
     MACD(_data=null, short=12, long=26){
-        if(this.macd == undefined) this.macd = {data: new Data()}
+        if(this.macd == undefined) this.macd = {data: new Data(), acc: new Data(), sign: new Data()}
         let data = _data == null
             ?this.data.last().close
             :this.data. this.macd.data.push(_data)
-        let ema1 = this.exponentialMediaAverage('MACD',data,short)
-        let ema2 = this.exponentialMediaAverage('MACD',data,long)
-    
-        return ema1-ema2
+        let ema1 = this.exponentialMediaAverage('MACD1',data,short)
+        let ema2 = this.exponentialMediaAverage('MACD2',data,long)
+        let last = this.macd.data.last()
+        let macd = ema1-ema2
+        let acc = macd-last
+        this.macd.data.push(macd)
+        this.macd.acc.push(acc)
+        let signs = this.macd.data.slice(-9).map((a,b)=>a+b) 
+        this.macd.sign.push(signs.slice(-1)[0])
+        return macd
     }
     /**
      * Cálculo de las bandas de bollinger
@@ -291,27 +329,47 @@ class IndicatorJS {
      * @returns 
      */
     bollinger(period = 20, factor = 2){
-        let slice = this.data.slice(period*-1).map(data=>data.price)
-        if(slice.length < period) return null
-        let av = this.simpleMediaAverage('bl',slice)
-        let sd = this.standardDeviation(slice, period)
-        let bs = av + (sd * factor) 
-        let bi = av - (sd * factor) 
+        let avh = null, avl = null, bs =  null, bi = null
+        let highs = this.data.slice(period*-1).map(data=>data.high)
+        let lows = this.data.slice(period*-1).map(data=>data.low)
+        if(highs.length >= period){
+            avh = this.simpleMediaAverage('blh',highs)
+            avl = this.simpleMediaAverage('bll',lows)
+            let sdh = this.standardDeviation('sdh', highs)
+            let sdl = this.standardDeviation('sdl', lows)
+            bs = avh + (factor * sdh) 
+            bi = avl - (factor * sdl) 
+        } 
 
-        return {high: bs, midle: av, low: bi}
+        return {high: bs, midleh: avh, midlel: avl, low: bi}
     }
     /**
      * Cálculo de la desviación standard
-     * @param {number} period 
-     * @returns 
+     * @param {string} index indeice de guardado  
+     * @param {array|float|integer} _data 
+     * @param {integer} period 
+     * @returns float
      */
-    standardDeviation(data){
-        let sma = this.simpleMediaAverage('sd',data)
+    standardDeviation(index, _data, period=null){
+        if(IndicatorJS.filters.isEmpty(_data)) return null
+        let slice = []
+
+        this.sd.data[index] ||= new Data()
+
+        let data = this.sd.data[index] 
+
+        if(Array.isArray(_data)) slice = _data
+        else {
+            this.sd.data[index].push(_data)
+            slice = data.slice(period*-1)
+        }
+        let len = period || slice.length
+        let sma = this.simpleMediaAverage(index,slice)
         let t = 0
-        for(let el of data){
+        for(let el of slice){
             t += Math.pow(el - sma, 2) 
         }
-        return Math.sqrt(t/(data.length -1))
+        return parseFloat(Math.sqrt(t/(len -1)))
     }
     static filters = {
         error: true, 
@@ -321,10 +379,12 @@ class IndicatorJS {
         isNotEqual(a, b){
             return  a!=b 
         }, 
-        isNull(a){
-            return a==null         
+        isNull(){
+            let r = true
+            for(let a of arguments) r = r && a == null
+            return r       
         }, 
-        isNotNull(a){
+        isNotNull(){
             let r = true
             for(let a of arguments) r = r && a != null
             return r           
@@ -332,14 +392,23 @@ class IndicatorJS {
         isGreater(a, b, factor = 0 ){
             return (a + factor)>b
         }, 
-        isInZone(a, b, factor){
-            factor = (factor*b)/100 
+        /**
+         * Comprueba que a se encuentra en la zona de influencia de b
+         * @param {float} a  valor que entra en zona
+         * @param {float} b  valor de la zona 
+         * @param {float} percent tamaño de la zona
+         * @returns {boolean}
+         */
+        isInZone(a, b, percent){
+            let factor = (percent*b)/100 
             let z1 = b + factor
             let z2 = b - factor
             return (a >= z2 && a <= z1)      
         },
-        isEmpty(a) {
-            return a == null || a == 'NaN' || a == 'undefined'
+        isEmpty() {
+            let r = true
+            for(let a of arguments) r = r && a == null || a == 'NaN' || a == 'undefined'
+            return r
         }
     }
 
