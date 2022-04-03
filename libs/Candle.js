@@ -2,18 +2,27 @@ class Candle{
     constructor(data){
         if(typeof(data)=='object'){
             this._time  = new Date(data.time)
+            this._closeTime = new Date(data.closeTime)
             this._open   = parseFloat(data.open)    || null    
             this._high   = parseFloat(data.high)    || null
             this._low    = parseFloat(data.low)     || null
             this._close  = parseFloat(data.close)   || null
+            this._volume =  parseFloat(data.volume) || null
+            this._quoteVolume =  parseFloat(data.quoteVolume) || null
+            this._takerBuyBaseVolume =  parseFloat(data.takerBuyBaseVolume) || null
+            this._takerBuyQuoteVolume = parseFloat(data.takerBuyQuoteVolume) || null
+            this._trades = parseInt(data.trades)
             this._price = (this._high + this.close) / 2
-        } else{
-            this._time = null
-            this._open = null
-            this._high = null
-            this._low = null
-            this._close = null
+            this._pp = (data.high + data.low + data.price) / 3 || null
+        }else{
+            throw new Error("No existen datos para crear la vela")
         }
+    }
+    get pp(){
+        return this._pp
+    }
+    get closeTime(){
+        return this._closeTime
     }
     get price (){
         return this._price
@@ -31,7 +40,7 @@ class Candle{
         return this._close
     }
     get time(){
-        return new Date(this._time)
+        return this._time
     }
     get datetime(){
         return new Date(this._time).toLocaleString()
