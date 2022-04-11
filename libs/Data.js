@@ -2,9 +2,13 @@
  * Tratamiento de datos para el objeto
  */
  class Data{
-    constructor(limit = 50){
-        this.limit = limit
-        this.container = []
+    constructor(arg){
+        if(Array.isArray(arg)) {
+            this.container = arg
+        } else {
+            this.limit = arg || 50
+            this.container = []
+        }
     }
     get length(){
         return this.container.length
@@ -13,10 +17,13 @@
         this.container.push(value)
      }
     get(slice=null){
-        if(slice) return this.container.slice(slice*-1)
-        return this.container
+        
+        return (slice) 
+            ? this.container.slice(Math.abs(slice)*-1)
+            : this.container
     }
     max(index=null){
+
         if (index != null){
             return Math.max(...this.container.map(d=>d[index]))
         }else{
@@ -31,7 +38,7 @@
         }
     }
     last(value = 1){
-        return this.container[this.container.length - value] || null
+        return   this.container[this.container.length - value] || null
     }
     len(){
         return this.container.length
@@ -46,21 +53,5 @@
     reset(){
         this.container = []
     }
-    test(){
-        try{
-            if(this.container < 1) throw 1
-        }catch(err){
-            if(err == 1){
-                console.log(
-                '\x1b[31m%s\x1b[0m',
-                "No existen datos para procesar.\nSe puede añadir datos mediante el método add"
-                )
-                process.exit()
-            }
-
-        }
-    }
-
-
 }
 module.exports = Data
