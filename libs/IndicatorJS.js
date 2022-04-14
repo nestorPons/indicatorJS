@@ -197,7 +197,7 @@ class IndicatorJS {
    * @param {int|null} period periodo de la media
    * @returns {integer} con la media del último elemento
    */
-  simpleMediaAverage(index, value, _period = null) {
+  SMA(index, value, _period = null) {
     if (this.sma.data[index] == undefined) {
       this.sma.data[index] = new Data();
       this.sma.acc[index] = new Data();
@@ -249,7 +249,7 @@ class IndicatorJS {
    * @param {*} softened
    * @returns
    */
-  exponentialMediaAverage(index, value, period, smooth = 2) {
+  EMA(index, value, period, smooth = 2) {
     if (this.ema.data[index] == undefined) {
       this.ema.data[index] = new Data();
       this.ema.acc[index] = new Data();
@@ -388,13 +388,6 @@ class IndicatorJS {
     return parseFloat(Math.sqrt(t / (len - 1)));
   }
   /**
-   * Cálculo de soportes y resistencias
-   */
-  supportsResistences() {
-    //console.log(this.data.last(2));
-    //process.exit();
-  }
-  /**
    * Cálculos del indicador storástico
    * El indicador estocástico es un oscilador que busca determinar cuán fuerte es el impulso del mercado, 
    * comparando el precio de cierre de un valor con su rango de precios durante un período de tiempo específico.
@@ -402,7 +395,7 @@ class IndicatorJS {
    * Si el indicador se eleva por encima de 75, es muestra de la posible sobrecompra de activo;
    * Si el indicador cae por debajo de 25, esto muestra la posible sobreventa de activo.
    * @param {integer} period 
-   * @returns 
+   * @returns {Array} [Valor %K , valor %D]
    */
   stochastic(period = 14, smooth=3){
     if (this.data.len() < period) return null
@@ -412,7 +405,7 @@ class IndicatorJS {
     let max = Math.max(...data.map(c=>c.high))
     let k = ((close-min)/(max-min))*100
     let d = this.simpleMediaAverage('stoc',k, smooth)
-    return d
+    return [k,d]
   }
   /**
    * Mide la volatilidad la rapidez con la que se mueven los precios.
