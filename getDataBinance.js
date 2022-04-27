@@ -14,7 +14,7 @@ const symbols = ['BNBUSDT']
 // Periods: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
 const timmings = ['1m']//,'3m','5m','15m','30m']
 // Tipo de guardado json | csv
-const extens = 'csv'
+const extens = 'json'
 
 // Variables internas para uso en el script
 let fechafin = new Date()
